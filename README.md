@@ -33,5 +33,29 @@ python scripts\ingest_annotations.py `
   --images "data\지하철 역사 내 CCTV 이상행동 영상\Training"
 ```
 
+처음에는 `--limit`으로 소량만 검증할 수 있습니다.
+
+```powershell
+python scripts\ingest_annotations.py `
+  --annotations "data\지하철 역사 내 CCTV 이상행동 영상\Training" `
+  --images "data\지하철 역사 내 CCTV 이상행동 영상\Training" `
+  --limit 10 `
+  --batch-size 3
+```
+
+Git Bash에서는 PowerShell의 백틱(`)이 줄 연결 문자가 아니므로 `\`를
+사용하고, 경로 구분자는 `/`로 작성합니다.
+
+```bash
+PYTHONPATH=src python scripts/ingest_annotations.py \
+  --annotations "data/지하철 역사 내 CCTV 이상행동 영상/Training" \
+  --images "data/지하철 역사 내 CCTV 이상행동 영상/Training" \
+  --limit 10 \
+  --batch-size 3
+```
+
+실행 결과는 기본적으로 `artifacts\crops`와 `artifacts\search.db`에 저장됩니다.
+전체 데이터는 시간이 오래 걸릴 수 있으므로 먼저 제한된 건수로 확인하세요.
+
 현재 단계에서는 annotation의 bounding box를 사용합니다. YOLO 검출과 의류
 속성 추출은 crop pipeline 이후 별도 모듈로 연결할 예정입니다.
