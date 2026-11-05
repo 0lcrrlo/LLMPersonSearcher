@@ -1,16 +1,23 @@
 import json
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from person_searcher.domain.models import PersonSearchCondition
 from person_searcher.domain.taxonomy import normalize_condition
+from person_searcher.storage.few_shot import FewShotStore
 
 
 class OllamaQueryParser:
     """Parse structured search conditions through a local Ollama model."""
 
-    def __init__(self, model: str = "qwen2.5:7b", client: Any = None) -> None:
+    def __init__(
+        self,
+        model: str = "qwen2.5:7b",
+        client: Any = None,
+        examples: Optional[FewShotStore] = None,
+    ) -> None:
         self.model = model
         self._client = client
+        self.examples = examples
 
     @property
     def client(self) -> Any:
@@ -28,16 +35,23 @@ class OllamaQueryParser:
         if not query.strip():
             raise ValueError("Search query must not be empty.")
 
+        system_prompt = (
+            "Extract clothing and accessories from the query. "
+            "Return only the requested JSON schema. Do not invent "
+            "attributes that are not present. Normalize subjective colors: "
+            "'어두운' means black, navy, or gray; '밝은' means white or ivory. "
+        )
+        if self.examples is not None:
+            examples = self.examples.prompt_text()
+            if examples:
+                system_prompt += "\nUse these examples as guidance:\n" + examples
+
         response = self.client.chat(
             model=self.model,
             messages=[
                 {
                     "role": "system",
-                    "content": (
-                        "Extract clothing and accessories from the query. "
-                        "Return only the requested JSON schema. Do not invent "
-                        "attributes that are not present."
-                    ),
+                    "content": system_prompt,
                 },
                 {"role": "user", "content": query},
             ],

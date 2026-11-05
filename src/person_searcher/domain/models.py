@@ -1,12 +1,18 @@
 from typing import List
 
-from pydantic import BaseModel, Field
+from pydantic import AliasChoices, BaseModel, Field
 
 
 class ItemCondition(BaseModel):
     category: str = Field(description="Item category, such as upper_body or bag")
-    colors: List[str] = Field(default_factory=list)
-    item_type: str = Field(default="")
+    colors: List[str] = Field(
+        default_factory=list,
+        validation_alias=AliasChoices("colors", "color"),
+    )
+    item_type: str = Field(
+        default="",
+        validation_alias=AliasChoices("item_type", "type"),
+    )
 
 
 class PersonSearchCondition(BaseModel):
