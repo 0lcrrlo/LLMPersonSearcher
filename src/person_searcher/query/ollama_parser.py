@@ -38,7 +38,10 @@ class OllamaQueryParser:
         system_prompt = (
             "Extract clothing and accessories from the query. "
             "Return only the requested JSON schema. Do not invent "
-            "attributes that are not present. Normalize subjective colors: "
+            "attributes or alternative values that are not present. "
+            "Map '파란' or '파란색' exactly to blue, and '검은' or '검은색' "
+            "exactly to black. Never replace those colors with a color group. "
+            "Normalize subjective colors only when the query is subjective: "
             "'어두운' means black, navy, or gray; '밝은' means white or ivory. "
         )
         if self.examples is not None:

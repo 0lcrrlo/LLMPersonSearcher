@@ -154,3 +154,8 @@ PYTHONPATH=src python scripts/search_person.py \
 
 수동 JSON의 `source`는 `manual`로 저장됩니다. 이후 CLIP, 의류 attribute
 모델 또는 VLM extractor도 같은 `PersonAttribute` 저장 계약을 사용하면 됩니다.
+
+실제 Ollama는 로컬 모델 상태에 따라 같은 입력을 다르게 해석할 수 있으므로,
+검색 결과보다 먼저 `Parsed condition`이 의도한 canonical 값인지 확인하세요.
+파서가 `blue`와 `black` 대신 다른 색상을 출력하면 해당 검색 결과는 신뢰하지
+말고 parser 실행을 다시 확인해야 합니다.
