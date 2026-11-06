@@ -51,3 +51,19 @@ PYTHONPATH=src python scripts/query_detections.py \
 
 사용 가능한 필터는 `--event-class`, `--split`, `--video-id`,
 `--global-id`, `--category`, `--limit`입니다.
+
+## Person attribute schema
+
+LLM/parser 또는 vision attribute extractor의 조건은 다음 canonical field로
+정규화됩니다.
+
+```text
+category: upper_body | lower_body | outerwear | bag | ...
+color: blue | black | ...
+item_type: t_shirt | jeans | ...
+```
+
+`person_detection`이 사람 crop의 위치/이벤트 메타데이터를 보관하고,
+`person_attribute`가 detection별 의류/액세서리 속성을 보관합니다.
+`colors`처럼 한 조건에 여러 색상이 있으면 DB에는 색상별 행으로 저장해
+각 필드를 인덱싱할 수 있도록 했습니다.

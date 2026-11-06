@@ -47,6 +47,24 @@ PYTHONPATH=src python scripts/ingest_annotations.py \
 * 중복 실행은 unique index로 방지하며 이벤트/분할, 영상/프레임, global ID, category 인덱스를 생성
 * 현재 구현 단계: Annotation의 바운딩 박스를 직접 활용 중이며, 향후 실제 탐지 이벤트 입력에는 YOLO 검출 및 의류 속성 추출 모듈을 별도로 연동할 예정
 
+## 2-2. LLM/vision attribute schema
+
+`person_detection`은 crop과 이벤트 정보를 저장하고, `person_attribute`는
+다음 canonical 필드를 detection별로 저장합니다.
+
+```text
+attribute_group: clothing | accessories
+category: upper_body | lower_body | outerwear | bag | ...
+color: blue | black | ...
+item_type: t_shirt | jeans | ...
+confidence: 0.0 ~ 1.0
+source: vision | llm | manual
+```
+
+기존 LLM 출력의 `color`/`type` 및 새 출력의 `colors`/`item_type`을 모두
+받아 canonical 값으로 변환합니다. 하나의 조건에 여러 색상이 있으면 DB에는
+색상별 attribute row로 분리해 저장합니다.
+
 ## 2-1. YOLO 인물 탐지
 
 ```bash

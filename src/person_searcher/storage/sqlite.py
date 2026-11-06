@@ -1,6 +1,8 @@
 import sqlite3
 from pathlib import Path
-from typing import Dict, Iterable, Tuple
+from typing import Dict, Iterable, List, Tuple
+
+from person_searcher.domain.models import PersonAttribute
 
 class SQLiteStore:
     def __init__(self, database_path: Path) -> None:
@@ -38,6 +40,27 @@ class SQLiteStore:
                     ON person_detection(category);
                 CREATE UNIQUE INDEX IF NOT EXISTS idx_detection_unique
                     ON person_detection(video_id, frame_number, annotation_index);
+                CREATE TABLE IF NOT EXISTS person_attribute (
+                    id INTEGER PRIMARY KEY,
+                    detection_id INTEGER NOT NULL,
+                    attribute_group TEXT NOT NULL
+                        CHECK (attribute_group IN ('clothing', 'accessories')),
+                    category TEXT NOT NULL,
+                    color TEXT,
+                    item_type TEXT,
+                    confidence REAL CHECK (
+                        confidence IS NULL OR (confidence >= 0 AND confidence <= 1)
+                    ),
+                    source TEXT NOT NULL,
+                    FOREIGN KEY (detection_id) REFERENCES person_detection(id),
+                    UNIQUE (
+                        detection_id, attribute_group, category, color, item_type, source
+                    )
+                );
+                CREATE INDEX IF NOT EXISTS idx_attribute_detection
+                    ON person_attribute(detection_id);
+                CREATE INDEX IF NOT EXISTS idx_attribute_lookup
+                    ON person_attribute(attribute_group, category, color, item_type);
                 """
             )
 
@@ -76,6 +99,32 @@ class SQLiteStore:
                  global_id, category, annotation_index, source_image, crop_path,
                  x, y, width, height)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                rows,
+            )
+
+    def add_attributes(self, attributes: Iterable[PersonAttribute]) -> None:
+        rows = [
+            (
+                attribute.detection_id,
+                attribute.attribute_group,
+                attribute.category,
+                attribute.color,
+                attribute.item_type,
+                attribute.confidence,
+                attribute.source,
+            )
+            for attribute in attributes
+        ]
+        if not rows:
+            return
+        with sqlite3.connect(self.database_path) as connection:
+            connection.executemany(
+                """
+                INSERT OR IGNORE INTO person_attribute
+                (detection_id, attribute_group, category, color, item_type,
+                 confidence, source)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
                 """,
                 rows,
             )
