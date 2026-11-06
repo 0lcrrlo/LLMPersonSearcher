@@ -98,3 +98,15 @@ PYTHONPATH=src python scripts/evaluate_parser.py \
 ```
 * 평가에서는 프로토타입과 마찬가지로 JSON/Pydantic 파싱 성공률을 측정
 * 의미 정확도 및 이미지 검색 정확도는 향후 정답(=Ground Truth) 데이터셋이 추가된 뒤 별도로 평가될 예정
+
+## 4. 실제 Ollama 연동 테스트
+
+현재 parser는 외부 API가 아닌 로컬 Ollama와 `qwen2.5:7b`를 사용합니다.
+
+```bash
+ollama serve
+ollama pull qwen2.5:7b
+python -m pip install -e ".[ollama]"
+PYTHONPATH=src python scripts/test_ollama_parser.py \
+ "파란 상의에 검은 하의를 입은 사람 찾아줘"
+```
