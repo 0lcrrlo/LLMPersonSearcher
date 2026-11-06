@@ -13,6 +13,7 @@ def main() -> None:
     parser.add_argument("--database", type=Path, default=Path("artifacts/search.db"))
     parser.add_argument("--limit", type=int, default=0, help="0 means all records")
     parser.add_argument("--batch-size", type=int, default=500)
+    parser.add_argument("--event-class", help="Only ingest one event class")
     args = parser.parse_args()
     if args.limit < 0 or args.batch_size <= 0:
         parser.error("--limit must be >= 0 and --batch-size must be > 0")
@@ -26,6 +27,8 @@ def main() -> None:
     count = 0
     detections = []
     for record in reader.records():
+        if args.event_class and record["event_class"] != args.event_class:
+            continue
         crop_path = writer.write(record)
         detections.append((record, crop_path))
         count += 1

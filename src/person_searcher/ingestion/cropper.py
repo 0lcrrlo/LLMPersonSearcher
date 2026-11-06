@@ -10,7 +10,12 @@ class CropWriter:
 
     def write(self, record: Dict[str, object]) -> Path:
         source = Path(str(record["image_path"]))
-        output_dir = self.output_root / str(record["video_id"])
+        output_dir = (
+            self.output_root
+            / str(record["split"])
+            / str(record["event_class"])
+            / str(record["video_id"])
+        )
         output_dir.mkdir(parents=True, exist_ok=True)
         output_path = output_dir / (
             f"{record['frame_number']}_{record['annotation_index']}.jpg"

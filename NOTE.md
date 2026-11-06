@@ -1,4 +1,4 @@
-# 11.5 변경 사항
+# 11.6 변경 사항
 기존 스크립트는 해당 브랜치로 보존하며, 통합된 개발 환경은 `src/person_searcher` 내부를 기준으로 시작
 
 ## 1. 환경 설정 및 설치
@@ -42,7 +42,24 @@ PYTHONPATH=src python scripts/ingest_annotations.py \
 ```
 
 * 기본적으로 artifacts/crops와 artifacts/search.db에 저장
-* 현재 구현 단계: Annotation의 바운딩 박스를 직접 활용 중이며, 향후 크롭 파이프라인 이후에 YOLO 검출 및 의류 속성 추출 모듈을 별도로 연동할 예정
+* 이벤트별 annotation에 포함된 `person`/`child` 객체만 저장하며, 일반 프레임 전체를 DB에 저장하지 않음
+* `Training`/`Validation`과 이벤트 클래스, 원본 영상명을 detection metadata에 보존
+* 중복 실행은 unique index로 방지하며 이벤트/분할, 영상/프레임, global ID, category 인덱스를 생성
+* 현재 구현 단계: Annotation의 바운딩 박스를 직접 활용 중이며, 향후 실제 탐지 이벤트 입력에는 YOLO 검출 및 의류 속성 추출 모듈을 별도로 연동할 예정
+
+## 2-1. YOLO 인물 탐지
+
+```bash
+python -m pip install -e ".[yolo]"
+PYTHONPATH=src python scripts/ingest_yolo.py \
+  --images "data/지하철 역사 내 CCTV 이상행동 영상/Training" \
+  --event-class "개집표기 무단진입" \
+  --limit 10 \
+  --confidence 0.25
+```
+
+`ultralytics`와 모델 가중치 설치/다운로드는 환경에 따라 오래 걸릴 수
+있습니다. `--limit`으로 먼저 확인한 뒤 전체 처리를 실행합니다.
 
 ## 3. 자연어 Parser 실행 및 평가
 ### 3-1. Ollama 설치 및 모델 준비
