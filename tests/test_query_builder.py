@@ -7,6 +7,7 @@ from person_searcher.storage.few_shot import FewShotStore
 from person_searcher.ingestion.annotations import AnnotationReader
 from person_searcher.ingestion.cropper import CropWriter
 from person_searcher.storage.sqlite import SQLiteStore
+from person_searcher.storage.detection_repository import DetectionRepository
 
 
 def test_query_uses_elem_match_for_each_item():
@@ -122,3 +123,11 @@ def test_event_ingestion_preserves_event_metadata_and_indexes(tmp_path):
         assert db.execute(
             "SELECT event_class, split, category FROM person_detection"
         ).fetchone() == ("배회", "training", "person")
+
+    results = DetectionRepository(tmp_path / "search.db").find(
+        event_class="배회",
+        category="person",
+        limit=10,
+    )
+    assert len(results) == 1
+    assert results[0]["crop_path"] == str(crop)
