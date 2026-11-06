@@ -1,5 +1,6 @@
 import argparse
 import json
+import sqlite3
 from pathlib import Path
 
 from person_searcher.query.ollama_parser import OllamaQueryParser
@@ -33,7 +34,7 @@ def main() -> None:
             condition,
             limit=args.limit,
         )
-    except Exception as exc:
+    except (RuntimeError, ValueError, sqlite3.Error) as exc:
         raise SystemExit(f"Person search failed: {exc}") from exc
 
     print("Parsed condition:")
