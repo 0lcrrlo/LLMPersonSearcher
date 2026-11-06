@@ -238,3 +238,71 @@ def test_attributes_persist_with_detection(tmp_path):
     assert DetectionRepository(tmp_path / "search.db").attributes_for(detection_id)[0][
         "color"
     ] == "blue"
+
+
+def test_attribute_search_requires_all_items_on_same_detection(tmp_path):
+    store = SQLiteStore(tmp_path / "search.db")
+    store.initialize()
+    records = [
+        {
+            "split": "inference",
+            "event_class": "test",
+            "video_id": "video-1",
+            "source_video": "video-1.mp4",
+            "frame_number": index,
+            "global_id": f"person-{index}",
+            "category": "person",
+            "annotation_index": 0,
+            "image_path": f"frame-{index}.jpg",
+            "x": 0,
+            "y": 0,
+            "width": 10,
+            "height": 10,
+        }
+        for index in (1, 2)
+    ]
+    for record in records:
+        store.add_detection(record, tmp_path / f"crop-{record['frame_number']}.jpg")
+
+    repository = DetectionRepository(tmp_path / "search.db")
+    detections = repository.find(limit=10)
+    store.add_attributes(
+        condition_to_attributes(
+            detections[0]["id"],
+            PersonSearchCondition(
+                clothing=[
+                    ItemCondition(category="upper_body", colors=["blue"]),
+                    ItemCondition(category="lower_body", colors=["black"]),
+                ]
+            ),
+        )
+    )
+    store.add_attributes(
+        condition_to_attributes(
+            detections[1]["id"],
+            PersonSearchCondition(
+                clothing=[ItemCondition(category="upper_body", colors=["blue"])]
+            ),
+        )
+    )
+
+    results = repository.search_attributes(
+        PersonSearchCondition(
+            clothing=[
+                ItemCondition(category="상의", colors=["파란색"]),
+                ItemCondition(category="하의", colors=["검은색"]),
+            ]
+        )
+    )
+    assert [result["id"] for result in results] == [detections[0]["id"]]
+
+
+def test_attribute_search_rejects_unsupported_gender(tmp_path):
+    store = SQLiteStore(tmp_path / "search.db")
+    store.initialize()
+    repository = DetectionRepository(tmp_path / "search.db")
+
+    import pytest
+
+    with pytest.raises(ValueError, match="gender"):
+        repository.search_attributes(PersonSearchCondition(gender="male"))

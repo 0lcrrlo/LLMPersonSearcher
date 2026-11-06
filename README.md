@@ -101,3 +101,19 @@ PYTHONPATH=src python scripts/test_ollama_parser.py \
 
 `pytest`는 비용과 서버 상태에 영향을 받지 않도록 FakeClient를 사용하고,
 위 명령이 실제 Ollama integration test입니다.
+
+## 자연어로 저장된 crop 검색
+
+`person_attribute`에 저장된 속성이 있는 detection을 대상으로 Ollama가
+자연어 조건을 파싱하고, 모든 의류/액세서리 조건을 같은 detection에 적용해
+일치하는 crop 경로를 반환합니다. 의류 속성은 `feat/person-attribute-extractor`
+단계에서 실제 crop 이미지로부터 저장해야 검색 결과가 생성됩니다.
+
+```bash
+PYTHONPATH=src python scripts/search_person.py \
+  "파란 상의에 검은 하의를 입은 사람 찾아줘" \
+  --database artifacts/search.db
+```
+
+한 조건 안의 여러 색상은 OR로, 서로 다른 의류/액세서리 조건은 AND로
+검색합니다. 현재 gender는 DB에 저장하지 않으므로 검색할 수 없습니다.
