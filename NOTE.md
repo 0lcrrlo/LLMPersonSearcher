@@ -47,6 +47,20 @@ PYTHONPATH=src python scripts/ingest_annotations.py \
 * 중복 실행은 unique index로 방지하며 이벤트/분할, 영상/프레임, global ID, category 인덱스를 생성
 * 현재 구현 단계: Annotation의 바운딩 박스를 직접 활용 중이며, 향후 실제 탐지 이벤트 입력에는 YOLO 검출 및 의류 속성 추출 모듈을 별도로 연동할 예정
 
+## 2-1. YOLO 인물 탐지
+
+```bash
+python -m pip install -e ".[yolo]"
+PYTHONPATH=src python scripts/ingest_yolo.py \
+  --images "data/지하철 역사 내 CCTV 이상행동 영상/Training" \
+  --event-class "개집표기 무단진입" \
+  --limit 10 \
+  --confidence 0.25
+```
+
+`ultralytics`와 모델 가중치 설치/다운로드는 환경에 따라 오래 걸릴 수
+있습니다. `--limit`으로 먼저 확인한 뒤 전체 처리를 실행합니다.
+
 ## 3. 자연어 Parser 실행 및 평가
 ### 3-1. Ollama 설치 및 모델 준비
 ```Bash

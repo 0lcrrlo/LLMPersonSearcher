@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from person_searcher.domain.models import ItemCondition, PersonSearchCondition
 from person_searcher.domain.taxonomy import normalize_condition
 from person_searcher.query.builder import build_mongo_query
@@ -8,6 +10,7 @@ from person_searcher.ingestion.annotations import AnnotationReader
 from person_searcher.ingestion.cropper import CropWriter
 from person_searcher.storage.sqlite import SQLiteStore
 from person_searcher.storage.detection_repository import DetectionRepository
+from person_searcher.vision.yolo import detection_to_record
 
 
 def test_query_uses_elem_match_for_each_item():
@@ -131,3 +134,25 @@ def test_event_ingestion_preserves_event_metadata_and_indexes(tmp_path):
     )
     assert len(results) == 1
     assert results[0]["crop_path"] == str(crop)
+
+
+def test_yolo_detection_maps_to_common_record():
+    record = detection_to_record(
+        Path("frame_12.jpg"),
+        {
+            "detection_index": 2,
+            "confidence": 0.91,
+            "x": 10,
+            "y": 20,
+            "x2": 50,
+            "y2": 80,
+        },
+        split="inference",
+        event_class="loitering",
+        video_id="camera-1",
+        frame_number=12,
+    )
+    assert record["category"] == "person"
+    assert record["width"] == 40
+    assert record["height"] == 60
+    assert record["global_id"] == "yolo:camera-1:12:2"
