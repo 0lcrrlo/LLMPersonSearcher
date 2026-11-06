@@ -1,6 +1,7 @@
 from pathlib import Path
 
 from person_searcher.domain.models import ItemCondition, PersonSearchCondition
+from person_searcher.domain.attribute_mapping import condition_to_attributes
 from person_searcher.domain.taxonomy import normalize_condition
 from person_searcher.query.builder import build_mongo_query
 from person_searcher.query.ollama_parser import OllamaQueryParser
@@ -156,3 +157,84 @@ def test_yolo_detection_maps_to_common_record():
     assert record["width"] == 40
     assert record["height"] == 60
     assert record["global_id"] == "yolo:camera-1:12:2"
+
+
+def test_llm_condition_maps_to_indexable_attribute_rows():
+    attributes = condition_to_attributes(
+        7,
+        PersonSearchCondition(
+            clothing=[
+                ItemCondition(
+                    category="상의",
+                    colors=["파란색"],
+                    item_type="반팔티",
+                ),
+                ItemCondition(
+                    category="하의",
+                    colors=["검은색"],
+                    item_type="청바지",
+                ),
+            ]
+        ),
+        source="llm",
+    )
+    assert [attribute.model_dump() for attribute in attributes] == [
+        {
+            "detection_id": 7,
+            "attribute_group": "clothing",
+            "category": "upper_body",
+            "color": "blue",
+            "item_type": "t_shirt",
+            "confidence": 1.0,
+            "source": "llm",
+        },
+        {
+            "detection_id": 7,
+            "attribute_group": "clothing",
+            "category": "lower_body",
+            "color": "black",
+            "item_type": "jeans",
+            "confidence": 1.0,
+            "source": "llm",
+        },
+    ]
+
+
+def test_attributes_persist_with_detection(tmp_path):
+    root = tmp_path / "Training" / "배회"
+    labels = root / "[라벨]배회_1"
+    images = root / "[원천]배회_1" / "1"
+    labels.mkdir(parents=True)
+    images.mkdir(parents=True)
+    from PIL import Image
+
+    Image.new("RGB", (100, 100), "white").save(images / "frame_1.jpg")
+    (labels / "annotation_1.json").write_text(
+        '{"file":"video-1.mp4","frames":[{"number":1,"image":"frame_1.jpg",'
+        '"annotations":[{"label":{"x":10,"y":20,"width":30,"height":40},'
+        '"category":{"code":"person","attributes":[]}}]}]}',
+        encoding="utf-8",
+    )
+    record = next(AnnotationReader(root, root).records())
+    crop = CropWriter(tmp_path / "crops").write(record)
+    store = SQLiteStore(tmp_path / "search.db")
+    store.initialize()
+    store.add_detection(record, crop)
+    detection_id = DetectionRepository(tmp_path / "search.db").find(limit=1)[0]["id"]
+    store.add_attributes(
+        condition_to_attributes(
+            detection_id,
+            PersonSearchCondition(
+                clothing=[
+                    ItemCondition(
+                        category="upper_body",
+                        colors=["blue"],
+                        item_type="t_shirt",
+                    )
+                ]
+            ),
+        )
+    )
+    assert DetectionRepository(tmp_path / "search.db").attributes_for(detection_id)[0][
+        "color"
+    ] == "blue"

@@ -51,3 +51,53 @@ PYTHONPATH=src python scripts/query_detections.py \
 
 사용 가능한 필터는 `--event-class`, `--split`, `--video-id`,
 `--global-id`, `--category`, `--limit`입니다.
+
+## Person attribute schema
+
+LLM/parser 또는 vision attribute extractor의 조건은 다음 canonical field로
+정규화됩니다.
+
+```text
+category: upper_body | lower_body | outerwear | bag | ...
+color: blue | black | ...
+item_type: t_shirt | jeans | ...
+```
+
+`person_detection`이 사람 crop의 위치/이벤트 메타데이터를 보관하고,
+`person_attribute`가 detection별 의류/액세서리 속성을 보관합니다.
+`colors`처럼 한 조건에 여러 색상이 있으면 DB에는 색상별 행으로 저장해
+각 필드를 인덱싱할 수 있도록 했습니다.
+
+## 실제 Ollama parser 테스트
+
+현재 LLM provider는 외부 API가 아니라 로컬 Ollama입니다. 먼저 Ollama가
+실행 중이고 모델이 준비되어 있어야 합니다.
+
+```bash
+ollama serve
+ollama pull qwen2.5:7b
+python -m pip install -e ".[ollama]"
+```
+
+한 문장을 실제 모델에 전달해 구조화 결과를 확인합니다.
+
+```bash
+PYTHONPATH=src python scripts/test_ollama_parser.py \
+  "파란 상의에 검은 하의를 입은 사람 찾아줘"
+```
+
+출력은 DB 검색 전에 사용하는 canonical 조건입니다.
+
+```json
+{
+  "clothing": [
+    {"category": "upper_body", "colors": ["blue"], "item_type": "t_shirt"},
+    {"category": "lower_body", "colors": ["black"], "item_type": "jeans"}
+  ],
+  "accessories": [],
+  "gender": ""
+}
+```
+
+`pytest`는 비용과 서버 상태에 영향을 받지 않도록 FakeClient를 사용하고,
+위 명령이 실제 Ollama integration test입니다.

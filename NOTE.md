@@ -47,6 +47,24 @@ PYTHONPATH=src python scripts/ingest_annotations.py \
 * 중복 실행은 unique index로 방지하며 이벤트/분할, 영상/프레임, global ID, category 인덱스를 생성
 * 현재 구현 단계: Annotation의 바운딩 박스를 직접 활용 중이며, 향후 실제 탐지 이벤트 입력에는 YOLO 검출 및 의류 속성 추출 모듈을 별도로 연동할 예정
 
+## 2-2. LLM/vision attribute schema
+
+`person_detection`은 crop과 이벤트 정보를 저장하고, `person_attribute`는
+다음 canonical 필드를 detection별로 저장합니다.
+
+```text
+attribute_group: clothing | accessories
+category: upper_body | lower_body | outerwear | bag | ...
+color: blue | black | ...
+item_type: t_shirt | jeans | ...
+confidence: 0.0 ~ 1.0
+source: vision | llm | manual
+```
+
+기존 LLM 출력의 `color`/`type` 및 새 출력의 `colors`/`item_type`을 모두
+받아 canonical 값으로 변환합니다. 하나의 조건에 여러 색상이 있으면 DB에는
+색상별 attribute row로 분리해 저장합니다.
+
 ## 2-1. YOLO 인물 탐지
 
 ```bash
@@ -80,3 +98,15 @@ PYTHONPATH=src python scripts/evaluate_parser.py \
 ```
 * 평가에서는 프로토타입과 마찬가지로 JSON/Pydantic 파싱 성공률을 측정
 * 의미 정확도 및 이미지 검색 정확도는 향후 정답(=Ground Truth) 데이터셋이 추가된 뒤 별도로 평가될 예정
+
+## 4. 실제 Ollama 연동 테스트
+
+현재 parser는 외부 API가 아닌 로컬 Ollama와 `qwen2.5:7b`를 사용합니다.
+
+```bash
+ollama serve
+ollama pull qwen2.5:7b
+python -m pip install -e ".[ollama]"
+PYTHONPATH=src python scripts/test_ollama_parser.py \
+ "파란 상의에 검은 하의를 입은 사람 찾아줘"
+```

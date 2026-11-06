@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Literal, Optional
 
 from pydantic import AliasChoices, BaseModel, Field
 
@@ -19,3 +19,15 @@ class PersonSearchCondition(BaseModel):
     clothing: List[ItemCondition] = Field(default_factory=list)
     accessories: List[ItemCondition] = Field(default_factory=list)
     gender: str = Field(default="")
+
+
+class PersonAttribute(BaseModel):
+    """One normalized visual attribute belonging to one detection."""
+
+    detection_id: int
+    attribute_group: Literal["clothing", "accessories"]
+    category: str
+    color: Optional[str] = None
+    item_type: Optional[str] = None
+    confidence: Optional[float] = Field(default=None, ge=0.0, le=1.0)
+    source: str = "vision"
