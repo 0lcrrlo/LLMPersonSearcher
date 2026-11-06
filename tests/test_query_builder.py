@@ -13,6 +13,11 @@ from person_searcher.ingestion.cropper import CropWriter
 from person_searcher.storage.sqlite import SQLiteStore
 from person_searcher.storage.detection_repository import DetectionRepository
 from person_searcher.vision.yolo import detection_to_record
+from person_searcher.vision.reid import (
+    ColorHistogramEmbedder,
+    cosine_similarity,
+    rank_similar_crops,
+)
 
 
 def test_query_uses_elem_match_for_each_item():
@@ -359,3 +364,27 @@ def test_manual_attribute_json_maps_to_canonical_rows(tmp_path):
         "confidence": 0.8,
         "source": "manual",
     }
+
+
+def test_color_histogram_ranks_visually_similar_crops(tmp_path):
+    from PIL import Image
+
+    reference = tmp_path / "reference.jpg"
+    similar = tmp_path / "similar.jpg"
+    different = tmp_path / "different.jpg"
+    Image.new("RGB", (32, 32), (220, 30, 30)).save(reference)
+    Image.new("RGB", (32, 32), (210, 35, 35)).save(similar)
+    Image.new("RGB", (32, 32), (30, 30, 220)).save(different)
+
+    ranked = rank_similar_crops(
+        reference,
+        [
+            {"id": 1, "crop_path": str(different)},
+            {"id": 2, "crop_path": str(similar)},
+        ],
+        embedder=ColorHistogramEmbedder(),
+    )
+
+    assert ranked[0]["id"] == 2
+    assert ranked[0]["similarity"] > ranked[1]["similarity"]
+    assert cosine_similarity([1.0, 0.0], [1.0, 0.0]) == 1.0
