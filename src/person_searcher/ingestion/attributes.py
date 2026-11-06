@@ -1,9 +1,9 @@
 import json
 from pathlib import Path
-from typing import Any, Dict, Iterable, List
+from typing import List
 
 from person_searcher.domain.attribute_mapping import condition_to_attributes
-from person_searcher.domain.models import PersonSearchCondition, PersonAttribute
+from person_searcher.domain.models import PersonAttribute, PersonSearchCondition
 
 
 def load_manual_attributes(path: Path) -> List[PersonAttribute]:
