@@ -159,3 +159,30 @@ PYTHONPATH=src python scripts/search_person.py \
 검색 결과보다 먼저 `Parsed condition`이 의도한 canonical 값인지 확인하세요.
 파서가 `blue`와 `black` 대신 다른 색상을 출력하면 해당 검색 결과는 신뢰하지
 말고 parser 실행을 다시 확인해야 합니다.
+
+## 경량 Re-ID 프로토타입
+
+현재 Re-ID 시연은 추가 학습 없이 crop의 RGB 색상 히스토그램을 임베딩으로
+만들고 cosine similarity로 후보를 재랭킹합니다. 이는 복장 색상 기반의
+개념증명이며, 실제 사람 Re-ID 모델이나 동일인 보장을 의미하지 않습니다.
+
+기준 crop과 DB의 모든 인물 crop 비교:
+
+```bash
+PYTHONPATH=src python scripts/search_reid.py \
+  --reference artifacts/crops/training/.../1_0.jpg \
+  --database artifacts/search.db \
+  --limit 20
+```
+
+자연어 조건으로 후보를 먼저 좁힌 뒤 Re-ID 유사도로 재랭킹:
+
+```bash
+PYTHONPATH=src python scripts/search_reid.py \
+  --reference artifacts/crops/training/.../1_0.jpg \
+  --query "파란 상의에 검은 하의를 입은 사람 찾아줘" \
+  --database artifacts/search.db \
+  --limit 20
+```
+
+출력의 `similarity`가 높을수록 기준 crop과 색상 분포가 유사합니다.
