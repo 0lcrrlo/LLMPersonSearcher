@@ -43,8 +43,10 @@ COLOR_ALIASES: Dict[str, str] = {
 TYPE_ALIASES: Dict[str, str] = {
     "반팔티": "t_shirt",
     "티셔츠": "t_shirt",
+    "shirt": "t_shirt",
     "t_shirt": "t_shirt",
     "청바지": "jeans",
+    "pants": "jeans",
     "jeans": "jeans",
     "백팩": "backpack",
     "backpack": "backpack",

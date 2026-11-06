@@ -8,6 +8,7 @@ from person_searcher.query.ollama_parser import OllamaQueryParser
 from person_searcher.evaluation.queries import generate_tracking_queries
 from person_searcher.storage.few_shot import FewShotStore
 from person_searcher.ingestion.annotations import AnnotationReader
+from person_searcher.ingestion.attributes import load_manual_attributes
 from person_searcher.ingestion.cropper import CropWriter
 from person_searcher.storage.sqlite import SQLiteStore
 from person_searcher.storage.detection_repository import DetectionRepository
@@ -47,6 +48,18 @@ def test_taxonomy_normalizes_existing_korean_parser_output():
     }
 
 
+def test_taxonomy_normalizes_generic_llm_item_types():
+    normalized = normalize_condition(
+        PersonSearchCondition(
+            clothing=[
+                ItemCondition(category="upper_body", item_type="shirt"),
+                ItemCondition(category="lower_body", item_type="pants"),
+            ]
+        )
+    )
+    assert [item.item_type for item in normalized.clothing] == ["t_shirt", "jeans"]
+
+
 def test_few_shot_store_round_trip(tmp_path):
     store = FewShotStore(tmp_path / "examples.db")
     store.initialize()
@@ -80,6 +93,25 @@ def test_ollama_parser_validates_and_normalizes_response(tmp_path):
     parsed = OllamaQueryParser(client=FakeClient(), examples=store).parse("파란 상의")
     assert parsed.clothing[0].category == "upper_body"
     assert parsed.clothing[0].colors == ["blue"]
+
+
+def test_ollama_parser_prompt_preserves_explicit_color_terms(tmp_path):
+    class FakeClient:
+        def chat(self, **kwargs):
+            assert "파란" in kwargs["messages"][0]["content"]
+            assert "검은" in kwargs["messages"][0]["content"]
+
+            class Message:
+                content = '{"clothing":[],"accessories":[]}'
+
+            class Response:
+                message = Message()
+
+            return Response()
+
+    store = FewShotStore(tmp_path / "examples.db")
+    store.initialize()
+    OllamaQueryParser(client=FakeClient(), examples=store).parse("파란 상의")
 
 
 def test_legacy_prototype_field_names_are_accepted():
@@ -306,3 +338,24 @@ def test_attribute_search_rejects_unsupported_gender(tmp_path):
 
     with pytest.raises(ValueError, match="gender"):
         repository.search_attributes(PersonSearchCondition(gender="male"))
+
+
+def test_manual_attribute_json_maps_to_canonical_rows(tmp_path):
+    attribute_file = tmp_path / "attributes.json"
+    attribute_file.write_text(
+        '[{"detection_id": 4, "confidence": 0.8, "clothing": ['
+        '{"category": "상의", "colors": ["파란색"], "item_type": "반팔티"}]}]',
+        encoding="utf-8",
+    )
+
+    attributes = load_manual_attributes(attribute_file)
+
+    assert attributes[0].model_dump() == {
+        "detection_id": 4,
+        "attribute_group": "clothing",
+        "category": "upper_body",
+        "color": "blue",
+        "item_type": "t_shirt",
+        "confidence": 0.8,
+        "source": "manual",
+    }

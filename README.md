@@ -117,3 +117,45 @@ PYTHONPATH=src python scripts/search_person.py \
 
 한 조건 안의 여러 색상은 OR로, 서로 다른 의류/액세서리 조건은 AND로
 검색합니다. 현재 gender는 DB에 저장하지 않으므로 검색할 수 없습니다.
+
+## 초기 attribute extractor: 수동 JSON
+
+현재 YOLO는 사람 위치만 찾고 의류 속성은 생성하지 않습니다. 가장 빠른
+end-to-end 시연을 위해 detection별 수동 attribute JSON을 검증·정규화한 뒤
+`person_attribute`에 저장할 수 있습니다.
+
+`attributes.json` 예시:
+
+```json
+[
+  {
+    "detection_id": 1,
+    "confidence": 0.9,
+    "clothing": [
+      {"category": "상의", "colors": ["파란색"], "item_type": "반팔티"},
+      {"category": "하의", "colors": ["검은색"], "item_type": "청바지"}
+    ],
+    "accessories": []
+  }
+]
+```
+
+실행 순서:
+
+```bash
+PYTHONPATH=src python scripts/attach_attributes.py \
+  --database artifacts/search.db \
+  --attributes attributes.json
+
+PYTHONPATH=src python scripts/search_person.py \
+  "파란 상의에 검은 하의를 입은 사람 찾아줘" \
+  --database artifacts/search.db
+```
+
+수동 JSON의 `source`는 `manual`로 저장됩니다. 이후 CLIP, 의류 attribute
+모델 또는 VLM extractor도 같은 `PersonAttribute` 저장 계약을 사용하면 됩니다.
+
+실제 Ollama는 로컬 모델 상태에 따라 같은 입력을 다르게 해석할 수 있으므로,
+검색 결과보다 먼저 `Parsed condition`이 의도한 canonical 값인지 확인하세요.
+파서가 `blue`와 `black` 대신 다른 색상을 출력하면 해당 검색 결과는 신뢰하지
+말고 parser 실행을 다시 확인해야 합니다.
