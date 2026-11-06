@@ -36,7 +36,8 @@ class AnnotationReader:
                         "image_path": str(image_path),
                         "category": category.get("code"),
                         "annotation_index": index,
-                        "global_id": self._global_id(category) or f"{video_id}:{index}",
+                        "global_id": self._global_id(category)
+                        or f"{video_id}_{frame['number']}_{index}",
                         "x": label.get("x", 0),
                         "y": label.get("y", 0),
                         "width": label.get("width", 0),

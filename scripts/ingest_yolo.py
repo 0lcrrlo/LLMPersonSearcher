@@ -50,9 +50,10 @@ def main() -> None:
                 frame_number=frame_number,
             )
             detections.append((record, writer.write(record)))
+        store.add_detections(detections)
+        detections.clear()
         if args.limit and frames_seen >= args.limit:
             break
-    store.add_detections(detections)
     print(f"Processed {frames_seen} frames and stored {len(detections)} detections.")
 
 
