@@ -51,3 +51,18 @@ class DetectionRepository:
             connection.row_factory = sqlite3.Row
             rows = connection.execute(query, parameters).fetchall()
         return [dict(row) for row in rows]
+
+    def attributes_for(self, detection_id: int) -> List[Dict[str, object]]:
+        with sqlite3.connect(self.database_path) as connection:
+            connection.row_factory = sqlite3.Row
+            rows = connection.execute(
+                """
+                SELECT id, detection_id, attribute_group, category, color,
+                       item_type, confidence, source
+                FROM person_attribute
+                WHERE detection_id = ?
+                ORDER BY attribute_group, category, color, item_type
+                """,
+                (detection_id,),
+            ).fetchall()
+        return [dict(row) for row in rows]
